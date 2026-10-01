@@ -34,12 +34,15 @@ class Chunk:
 
 class BM25Index:
     def __init__(self, chunks: list[Chunk]):
-        self.chunks = chunks
-        self.tfs = [Counter(tokens(c.text)) for c in chunks]
-        self.avgdl = sum(map(lambda tf: sum(tf.values()), self.tfs)) / len(chunks) if chunks else 0
+        # Snapshot the corpus so caller edits cannot desynchronize text and scores.
+        self.chunks = tuple(chunks)
+        self.tfs = [Counter(tokens(c.text)) for c in self.chunks]
+        self.avgdl = sum(map(lambda tf: sum(tf.values()), self.tfs)) / len(self.chunks) if self.chunks else 0
         self.df = Counter(term for tf in self.tfs for term in tf)
 
     def search(self, query: str, k: int = 3) -> list[tuple[Chunk, float]]:
+        if k <= 0:
+            raise ValueError("k must be positive")
         if not self.chunks or not query.strip():
             return []
         n = len(self.chunks)
