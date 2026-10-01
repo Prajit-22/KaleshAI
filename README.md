@@ -28,4 +28,13 @@ Leave "Local Ollama" enabled, and chat. You can also switch it off, enter an HTT
 
 Upload a TXT, MD, or text-based PDF (2 MB/file, first 30 PDF pages). The app extracts text, creates overlapping chunks, retrieves them with lexical BM25, passes matching chunks to the selected LLM, and displays their source labels. Scanned PDFs need OCR. Lexical retrieval can miss synonyms. Retrieved labels show what was supplied to the model, not proof that every statement is supported.
 
-Files: `app.py` is the Streamlit UI and persona; `rag.py` chunks and ranks text; `llm.py` calls OpenAI-compatible endpoints; `test_core.py` tests retrieval and the mocked client. Run tests with `python -m unittest -v test_core.py`. Uploaded files and conversation history live in the Streamlit session, not a database. The chosen model provider receives message text and retrieved excerpts. Don't upload secrets or sensitive records. This demo has no autonomous account access.
+Files: `app.py` is the Streamlit UI and persona; `rag.py` chunks and ranks text; `llm.py` calls OpenAI-compatible endpoints; `test_core.py` tests retrieval and the mocked client. Run the 12 offline tests with `python -m unittest -v test_core.py`. Uploaded files and conversation history live in the Streamlit session, not a database. The chosen model provider receives message text and retrieved excerpts. Don't upload secrets or sensitive records. This demo has no autonomous account access.
+
+## Retrieval index lifecycle
+
+`BM25Index(chunks)` takes an immutable snapshot of the chunk list. Later edits
+to the input list do not change indexed text, source labels, or scores. Build a
+new index after changing the corpus. `search(query, k)` requires `k > 0`; blank
+queries and queries without matching tokens return no hits. These boundaries
+are covered by regression tests, including input-list replacement, clearing,
+and appending. Tests mock the LLM client and make no paid model calls.
