@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 from io import BytesIO
-from rag import BM25Index, chunk_text
+from rag import BM25Index, Chunk, chunk_text
 from llm import complete
 
 
@@ -37,6 +37,55 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(result, "Namaste, saale!")
         request = urlopen.call_args.args[0]
         self.assertEqual(request.full_url, "http://localhost:11434/v1/chat/completions")
+
+
+class IndexSnapshotTests(unittest.TestCase):
+    def test_replacing_input_chunk_does_not_relabel_a_match(self):
+        chunks = [Chunk("python.md", 1, "python services")]
+        index = BM25Index(chunks)
+        chunks[0] = Chunk("fruit.md", 1, "mango fruit")
+        hits = index.search("python")
+        self.assertEqual(hits[0][0].source, "python.md")
+        self.assertEqual(hits[0][0].text, "python services")
+
+    def test_clearing_input_does_not_empty_existing_index(self):
+        chunks = [Chunk("a.md", 1, "python services")]
+        index = BM25Index(chunks)
+        chunks.clear()
+        self.assertEqual(index.search("python")[0][0].source, "a.md")
+
+    def test_appending_input_does_not_change_scores(self):
+        chunks = [Chunk("a.md", 1, "python services")]
+        index = BM25Index(chunks)
+        before = index.search("python")
+        chunks.append(Chunk("b.md", 1, "unrelated words"))
+        self.assertEqual(index.search("python"), before)
+
+    def test_index_snapshot_is_immutable(self):
+        index = BM25Index([Chunk("a.md", 1, "python")])
+        self.assertIsInstance(index.chunks, tuple)
+
+    def test_nonpositive_k_rejected_even_for_empty_queries_or_corpora(self):
+        for chunks in ([], [Chunk("a.md", 1, "python")]):
+            for query in ("", "python"):
+                for k in (0, -1):
+                    with self.subTest(chunks=chunks, query=query, k=k):
+                        with self.assertRaisesRegex(ValueError, "k must be positive"):
+                            BM25Index(chunks).search(query, k=k)
+
+    def test_limit_and_descending_scores(self):
+        index = BM25Index([Chunk("a", 1, "python python python"),
+                           Chunk("b", 1, "python and other words"),
+                           Chunk("c", 1, "mango fruit")])
+        hits = index.search("python", k=1)
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0][0].source, "a")
+
+    def test_punctuation_query_and_tokenless_documents(self):
+        index = BM25Index([Chunk("a", 1, "!!!")])
+        self.assertEqual(index.search("!!!"), [])
+        self.assertEqual(index.search("python"), [])
+
 
 
 if __name__ == "__main__":
