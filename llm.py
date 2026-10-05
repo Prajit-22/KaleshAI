@@ -31,5 +31,9 @@ def complete(messages: list[dict], base_url: str, model: str, api_key: str = "",
         raise RuntimeError(f"Provider returned HTTP {error.code}: {detail}") from error
     except urllib.error.URLError as error:
         raise RuntimeError(f"Cannot reach model endpoint: {error.reason}") from error
+    except TimeoutError as error:
+        raise RuntimeError(f"Model endpoint timed out after {timeout}s") from error
+    except ValueError as error:  # json.JSONDecodeError and bad UTF-8 in the body
+        raise RuntimeError("Provider returned a response that is not valid JSON") from error
     except (KeyError, IndexError, TypeError) as error:
         raise RuntimeError("Provider returned an unexpected chat response") from error
