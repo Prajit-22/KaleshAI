@@ -88,5 +88,53 @@ class IndexSnapshotTests(unittest.TestCase):
 
 
 
+class ClientFailureTests(unittest.TestCase):
+    def _serve(self, body, status=200):
+        import http.server, threading
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                self.send_response(status)
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.shutdown)
+        self.addCleanup(server.server_close)
+        return f"http://127.0.0.1:{server.server_port}/v1"
+
+    def test_non_json_body_becomes_runtime_error(self):
+        url = self._serve(b"<html>gateway page</html>")
+        with self.assertRaisesRegex(RuntimeError, "not valid JSON"):
+            complete([], url, "m")
+
+    def test_invalid_utf8_body_becomes_runtime_error(self):
+        url = self._serve(b"\xff\xfe")
+        with self.assertRaisesRegex(RuntimeError, "not valid JSON"):
+            complete([], url, "m")
+
+    def test_unexpected_shape_becomes_runtime_error(self):
+        url = self._serve(b'{"choices": []}')
+        with self.assertRaisesRegex(RuntimeError, "unexpected chat response"):
+            complete([], url, "m")
+
+    def test_valid_response_returns_content(self):
+        url = self._serve(b'{"choices": [{"message": {"content": "hi"}}]}')
+        self.assertEqual(complete([], url, "m"), "hi")
+
+    def test_read_timeout_becomes_runtime_error(self):
+        with patch("llm.urllib.request.urlopen", side_effect=TimeoutError("timed out")):
+            with self.assertRaisesRegex(RuntimeError, "timed out"):
+                complete([], "http://127.0.0.1:9/v1", "m", timeout=3)
+
+    def test_blank_model_rejected(self):
+        with self.assertRaises(ValueError):
+            complete([], "http://127.0.0.1:9/v1", "  ")
+
+
 if __name__ == "__main__":
     unittest.main()
