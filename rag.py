@@ -17,8 +17,12 @@ def chunk_text(text: str, source: str, size: int = 180, overlap: int = 35) -> li
     if size <= 0 or overlap < 0 or overlap >= size:
         raise ValueError("size must be positive and 0 <= overlap < size")
     words = text.split()
-    return [Chunk(source, i // (size - overlap) + 1, " ".join(words[i:i + size]))
-            for i in range(0, len(words), size - overlap) if words[i:i + size]]
+    chunks = []
+    for start in range(0, len(words), size - overlap):
+        chunks.append(Chunk(source, len(chunks) + 1, " ".join(words[start:start + size])))
+        if start + size >= len(words):
+            break  # the window reached the end; a further tail would only repeat overlap
+    return chunks
 
 
 @dataclass(frozen=True)
