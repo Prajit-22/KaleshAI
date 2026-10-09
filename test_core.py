@@ -24,6 +24,29 @@ class RagTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             chunk_text("hello", "a", size=2, overlap=2)
 
+    def test_no_duplicate_tail_chunk_when_text_ends_inside_overlap(self):
+        # 8 words, size 5, overlap 2: the second window already ends the text.
+        words = " ".join(f"w{i}" for i in range(8))
+        chunks = chunk_text(words, "a", size=5, overlap=2)
+        self.assertEqual([c.text for c in chunks], ["w0 w1 w2 w3 w4", "w3 w4 w5 w6 w7"])
+        # 5 words fit one window exactly; the old code emitted a 2-word repeat.
+        exact = chunk_text("w0 w1 w2 w3 w4", "a", size=5, overlap=2)
+        self.assertEqual([(c.number, c.text) for c in exact], [(1, "w0 w1 w2 w3 w4")])
+        # 6 words: the tail adds one new word, so it stays.
+        six = chunk_text("w0 w1 w2 w3 w4 w5", "a", size=5, overlap=2)
+        self.assertEqual([c.text for c in six], ["w0 w1 w2 w3 w4", "w3 w4 w5"])
+
+    def test_chunks_cover_text_without_contained_chunks(self):
+        for n in range(0, 40):
+            text = " ".join(f"w{i}" for i in range(n))
+            chunks = chunk_text(text, "a", size=7, overlap=3)
+            self.assertEqual([c.number for c in chunks], list(range(1, len(chunks) + 1)))
+            if n:
+                self.assertIn(f"w{n - 1}", chunks[-1].text.split())
+            for earlier, later in zip(chunks, chunks[1:]):
+                self.assertFalse(later.text in earlier.text, (n, later.text))
+        self.assertEqual(chunk_text("", "a"), [])
+
 
 class ClientTests(unittest.TestCase):
     def test_rejects_plaintext_remote(self):
