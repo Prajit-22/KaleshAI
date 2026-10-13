@@ -4,6 +4,8 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse
 
+USER_AGENT = "Mozilla/5.0 (compatible; KaleshAI/1.0; +https://github.com/Prajit-22/KaleshAI)"
+
 
 def complete(messages: list[dict], base_url: str, model: str, api_key: str = "", timeout: int = 90) -> str:
     url = base_url.rstrip("/") + "/chat/completions"
@@ -15,7 +17,8 @@ def complete(messages: list[dict], base_url: str, model: str, api_key: str = "",
     if not model.strip():
         raise ValueError("Select a model")
     body = json.dumps({"model": model, "messages": messages, "temperature": 0.8, "max_tokens": 650}).encode()
-    headers = {"Content-Type": "application/json"}
+    # Some providers (Groq via Cloudflare) reject urllib's default "Python-urllib" User-Agent with HTTP 403 / error 1010.
+    headers = {"Content-Type": "application/json", "Accept": "application/json", "User-Agent": USER_AGENT}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     request = urllib.request.Request(url, data=body, headers=headers, method="POST")

@@ -145,6 +145,30 @@ class ClientFailureTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "unexpected chat response"):
             complete([], url, "m")
 
+    def test_sends_browser_like_user_agent_and_auth(self):
+        import http.server, threading
+        seen = {}
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                seen.update(self.headers)
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'{"choices": [{"message": {"content": "ok"}}]}')
+
+            def log_message(self, *args):
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.shutdown)
+        self.addCleanup(server.server_close)
+        complete([], f"http://127.0.0.1:{server.server_port}/v1", "m", "k123")
+        self.assertNotIn("urllib", seen["User-Agent"].lower())
+        self.assertIn("KaleshAI", seen["User-Agent"])
+        self.assertEqual(seen["Authorization"], "Bearer k123")
+        self.assertEqual(seen["Content-Type"], "application/json")
+
     def test_valid_response_returns_content(self):
         url = self._serve(b'{"choices": [{"message": {"content": "hi"}}]}')
         self.assertEqual(complete([], url, "m"), "hi")

@@ -101,7 +101,8 @@ if prompt := st.chat_input("Ask me something, saale..."):
             try:
                 reply = complete([{"role": "system", "content": SYSTEM}] + last_turns, base, model, api_key)
             except Exception as error:
-                reply = f"Model error: {error}. Start Ollama and pull the model, or check your provider URL, model and key."
+                hint = "Start Ollama and pull the model, or check the URL and model." if local else "Check your provider URL, model and API key."
+                reply = f"Model error: {error}. {hint}"
         st.markdown(reply)
         sources = [chunk.label for chunk, _ in matches]
         if sources:
