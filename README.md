@@ -1,5 +1,7 @@
 # KaleshAI 😈
 
+**Live demo:** https://kaleshai.streamlit.app
+
 A mischievous Hinglish chatbot with a real LLM-backed chat flow and optional document Q&A. It is an evil-ish twin: quick roasts, light gaali, but still answers the question. KaleshAI is an independent demo, not an Instinct product or replica.
 
 ## Run locally
