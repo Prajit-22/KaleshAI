@@ -22,7 +22,11 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Leave "Local Ollama" enabled, and chat. You can also switch it off, enter an HTTPS OpenAI-compatible base URL, model and API key. Cloud API calls may cost money. The app does not load `.env` by itself; use environment variables or the sidebar. Never commit a key.
+Turn on the "Local Ollama" toggle in the sidebar, and chat. You can also switch it off, enter an HTTPS OpenAI-compatible base URL, model and API key. Cloud API calls may cost money. The app does not load `.env` by itself; use environment variables or the sidebar. Never commit a key.
+
+## Hosted use
+
+The app starts with Local Ollama off and Groq defaults prefilled (`https://api.groq.com/openai/v1`, `llama-3.1-8b-instant`). No key is stored in the repo: paste your own key in the sidebar, or set `OPENAI_API_KEY` in the host's environment. On Streamlit Community Cloud, deploy `app.py` from this repo.
 
 ## RAG path
 

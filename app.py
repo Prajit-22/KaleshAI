@@ -46,10 +46,12 @@ st.info("Demo app. Chats and uploaded files stay in this browser session; the ch
 
 with st.sidebar:
     st.header("Model")
-    local = st.toggle("Local Ollama", value=True, help="Run without a cloud API key")
-    default_base = "http://localhost:11434/v1" if local else os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    local = st.toggle("Local Ollama", value=False, help="Turn on to use Ollama on your own machine (no API key). Leave off for hosted use.")
+    default_base = "http://localhost:11434/v1" if local else os.getenv("OPENAI_BASE_URL", "https://api.groq.com/openai/v1")
     base = st.text_input("OpenAI-compatible base URL", value=default_base)
-    model = st.text_input("Model", value=("llama3.2" if local else os.getenv("OPENAI_MODEL", "gpt-4o-mini")))
+    model = st.text_input("Model", value=("llama3.2" if local else os.getenv("OPENAI_MODEL", "llama-3.1-8b-instant")))
+    if not local:
+        st.caption("Paste your own free Groq API key below (console.groq.com). It stays in this browser session only.")
     api_key = st.text_input("API key", type="password", value=os.getenv("OPENAI_API_KEY", "") if not local else "")
     st.divider()
     st.header("Document brain (RAG)")
@@ -78,6 +80,9 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
         if msg.get("sources"):
             st.caption("Sources: " + ", ".join(msg["sources"]))
+
+if not local and not api_key:
+    st.warning("Add an API key in the sidebar (Groq works: free key from console.groq.com), or switch on Local Ollama if you run it locally.")
 
 if prompt := st.chat_input("Ask me something, saale..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
