@@ -8,6 +8,9 @@ USER_AGENT = "Mozilla/5.0 (compatible; KaleshAI/1.0; +https://github.com/Prajit-
 
 
 def complete(messages: list[dict], base_url: str, model: str, api_key: str = "", timeout: int = 90) -> str:
+    api_key = (api_key or "").strip()
+    base_url = base_url.strip()
+    model = model.strip()
     url = base_url.rstrip("/") + "/chat/completions"
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
