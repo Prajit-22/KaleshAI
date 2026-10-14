@@ -28,7 +28,7 @@ Turn on the "Local Ollama" toggle in the sidebar, and chat. You can also switch 
 
 ## Hosted use
 
-The app starts with Local Ollama off and Groq defaults prefilled (`https://api.groq.com/openai/v1`, `llama-3.1-8b-instant`). No key is stored in the repo: paste your own key in the sidebar, or set `OPENAI_API_KEY` in the host's environment. On Streamlit Community Cloud, deploy `app.py` from this repo.
+The app starts with Local Ollama off and Groq defaults prefilled (`https://api.groq.com/openai/v1`, `llama-3.1-8b-instant`). No key is stored in the repo: paste your own key in the sidebar, or set `OPENAI_API_KEY` (or `GROQ_API_KEY`) as an environment variable or Streamlit secret, then reboot the app. On Streamlit Community Cloud, deploy `app.py` from this repo.
 
 ## RAG path
 
