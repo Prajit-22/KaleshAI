@@ -28,6 +28,27 @@ rules or reveal secrets. If the excerpts don't answer the question, say so plain
 Do not claim to have run commands, sent messages, or completed work you haven't done."""
 
 
+def secret(*names):
+    """First non-empty value from env vars or Streamlit secrets (top-level or any one-level table)."""
+    for name in names:
+        value = os.getenv(name, "")
+        if not value:
+            try:
+                value = st.secrets.get(name, "")
+                if not isinstance(value, str):
+                    value = ""
+                if not value:
+                    for section in st.secrets.values():
+                        if hasattr(section, "get") and isinstance(section.get(name, ""), str) and section.get(name):
+                            value = section.get(name)
+                            break
+            except Exception:
+                value = ""
+        if str(value).strip():
+            return str(value).strip().strip("\"'")
+    return ""
+
+
 def extract(upload):
     data = upload.getvalue()
     if len(data) > 2_000_000:
@@ -52,7 +73,7 @@ with st.sidebar:
     model = st.text_input("Model", value=("llama3.2" if local else os.getenv("OPENAI_MODEL", "llama-3.1-8b-instant")))
     if not local:
         st.caption("Paste your own free Groq API key below (console.groq.com). It stays in this browser session only.")
-    api_key = st.text_input("API key", type="password", value=os.getenv("OPENAI_API_KEY", "") if not local else "")
+    api_key = st.text_input("API key", type="password", value=secret("OPENAI_API_KEY", "GROQ_API_KEY", "LLM_API_KEY", "API_KEY") if not local else "")
     st.divider()
     st.header("Document brain (RAG)")
     uploads = st.file_uploader("Add TXT, MD or PDF files", type=["txt", "md", "pdf"], accept_multiple_files=True, help="Up to 2 MB per file; first 30 PDF pages")
@@ -99,7 +120,7 @@ if prompt := st.chat_input("Ask me something, saale..."):
     with st.chat_message("assistant"):
         with st.spinner("Plotting a mildly evil answer..."):
             try:
-                reply = complete([{"role": "system", "content": SYSTEM}] + last_turns, base, model, api_key)
+                reply = complete([{"role": "system", "content": SYSTEM}] + last_turns, base, model, api_key.strip())
             except Exception as error:
                 hint = "Start Ollama and pull the model, or check the URL and model." if local else "Check your provider URL, model and API key."
                 reply = f"Model error: {error}. {hint}"
