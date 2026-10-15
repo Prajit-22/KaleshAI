@@ -54,9 +54,9 @@ Files: `app.py` is the Streamlit UI and persona; `rag.py` chunks and ranks text;
 
 ## Web search
 
-Turn on "Search the web" in the sidebar. For each question that looks like a lookup (a question mark or three or more words; greetings are skipped), the app searches the web first and gives the top results (title, URL and snippet only, never full pages) to the model, which is asked to cite them as `[web #n]`. The links appear under the reply. No search API key is needed.
+Turn on "Search the web" in the main-page "Web search & documents" popover. For each question that looks like a lookup (a question mark or three or more words; greetings are skipped), the app searches the web first and gives the top results (title, URL and snippet only, never full pages) to the model, which is asked to cite them as `[web #n]`. The links appear under the reply. No search API key is needed.
 
-How it works: `websearch.py` is standard-library only. It tries Bing's HTML results, then DuckDuckGo's HTML results, then the Wikipedia search API, and uses the first one that returns results. Chatty questions are rewritten into keywords first ("what is the latest X?" becomes "latest X"), and results that don't mention most of those keywords are rejected so the next backend is tried. Scraped result pages are not a stable API: a search engine can block a hosting provider's IP or change its layout. When every backend fails, the reply says so, the model is told not to claim it searched, and chat keeps working. "Test web search" in the sidebar checks the backends from the server the app runs on. Search results are untrusted text and are passed to the model as reference material, not instructions. Your question text goes to the search engine. Local Ollama can use web search too.
+How it works: `websearch.py` is standard-library only. It tries Bing's HTML results, then DuckDuckGo's HTML results, then the Wikipedia search API, and uses the first one that returns results. Chatty questions are rewritten into keywords first ("what is the latest X?" becomes "latest X"), and results that don't mention most of those keywords are rejected so the next backend is tried. Scraped result pages are not a stable API: a search engine can block a hosting provider's IP or change its layout. When every backend fails, the reply says so, the model is told not to claim it searched, and chat keeps working. "Test web search" in the same popover checks the backends from the server the app runs on. Search results are untrusted text and are passed to the model as reference material, not instructions. Your question text goes to the search engine. Local Ollama can use web search too.
 
 Offline tests for the parsers, fallback order, failure handling and prompt building are in `test_websearch.py`; no test touches the network.
 
@@ -79,3 +79,38 @@ and appending. Tests mock the LLM client and make no paid model calls.
 `overlap` words. Chunking stops as soon as a window reaches the end of the
 text, so a short document never produces a second chunk that only repeats the
 end of the first (which would show up as a duplicate retrieval hit).
+
+## Document workshop and downloads
+
+Open **Web search & documents** on the main page. Upload TXT, MD or text-based
+PDF files, then choose **Work with** to scope chat or a document job to one file
+or all files. Duplicate filenames have numbered source labels. You can preview
+a selected file's extracted text and download it as TXT without any API key.
+
+Choose **Summary** or **Action items** and click **Run document job**. These are
+explicit, user-triggered model calls using your existing Groq key or local Ollama;
+no new service, key, or paid integration is required. Provider quotas still apply.
+The action-items prompt asks for action, owner, deadline and source; missing
+owners/dates must be "not specified". It does not create tasks or send messages.
+Web search is skipped for document jobs so private document text is not searched.
+Regular chat still uses lexical BM25 retrieval from your selected files.
+
+Limits: first 5 files, 2 MB each, first 30 PDF pages, first 120,000 extracted
+characters per file. Scanned/empty PDFs are rejected with an OCR hint. Jobs use
+whole extracted chunks up to a 14,000-character reference budget. Larger inputs
+are sampled across the document, with exact chunk labels and a visible partial
+coverage notice. This is not an exhaustive review of long documents. Answers
+are short and model-generated; check important claims against the file.
+
+Under **Save your work**, choose any successful answer and download it as
+Markdown or TXT, including the source labels, coverage note and web URLs.
+Download the whole conversation as Markdown too. Error replies aren't offered
+as saved answers. Exports need no key, are generated in-session, and never share
+or send a file to anyone. Markdown is the first document format; PDF/Word export,
+full URL reading, account actions, autonomous tasks and external sends are left
+for later. The original art, persona and controls drawer are unchanged.
+
+`workbench.py` owns bounded job contexts and exports. `test_workbench.py` covers
+coverage, chunk labels, export fidelity and a mocked document-job UI flow.
+Offline tests do not prove live Groq responses. To run all UI smoke tests locally,
+install `requirements.txt` before `python -m unittest discover -v`.
