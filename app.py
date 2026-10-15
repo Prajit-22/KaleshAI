@@ -10,7 +10,7 @@ from pypdf import PdfReader
 from workbench import TASKS, document_context, reply_export, conversation_export
 from llm import complete
 from rag import BM25Index, chunk_text
-from websearch import build_user_message, format_context, html_links, search as web_search, wants_search
+from websearch import clean_query, build_user_message, format_context, html_links, search as web_search, wants_search
 
 # Small original garage-cat favicon, drawn locally without an image request.
 def garage_icon():
@@ -143,6 +143,7 @@ with tools_panel:
     if st.button("Test web search", disabled=not web_on):
         with st.spinner("Searching..."):
             test_results, test_backend, test_notes = web_search(test_query, 3)
+        st.caption("Search query used: " + clean_query(test_query))
         if test_results:
             st.success(f"Web search works via {test_backend}: {len(test_results)} results.")
             st.markdown(html_links(test_results), unsafe_allow_html=True)
