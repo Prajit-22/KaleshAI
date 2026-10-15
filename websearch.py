@@ -164,7 +164,7 @@ def clean_query(query: str) -> str:
 
 
 def _terms(text: str) -> list[str]:
-    return [t for t in re.findall(r"\w+", text.lower()) if len(t) > 1 and t not in STOPWORDS]
+    return [{"resumes": "resume", "scores": "score", "versions": "version"}.get(t, t) for t in re.findall(r"\w+", text.lower()) if len(t) > 1 and t not in STOPWORDS]
 
 
 def is_on_topic(results: list[WebResult], query: str) -> bool:
@@ -173,9 +173,10 @@ def is_on_topic(results: list[WebResult], query: str) -> bool:
     if not terms:
         return True
     need = min(2, len(terms))
+    anchors = terms - {"latest", "best", "free", "website", "websites", "checker", "check", "online", "score", "scoring", "version", "stable"}
     for item in results:
         haystack = set(_terms(f"{item.title} {item.snippet} {item.url}"))
-        if len(terms & haystack) >= need:
+        if len(terms & haystack) >= need and (not anchors or anchors & haystack):
             return True
     return False
 
