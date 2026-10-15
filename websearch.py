@@ -137,10 +137,46 @@ def _wikipedia(query: str, limit: int) -> list[WebResult]:
 
 BACKENDS = (("Bing", _bing), ("DuckDuckGo", _duckduckgo), ("Wikipedia", _wikipedia))
 
+STOPWORDS = frozenset(
+    "a an and are as at be by for from how in is it of on or the to was were what when where which who why "
+    "with about can you your me my tell please kya hai hain ka ki ke bata batao mujhe".split()
+)
+HINGLISH_FILLER = frozenset("kya hai hain ka ki ke ko bata batao mujhe yaar bhai".split())
+_LEADING_QUESTION = re.compile(
+    r"^(?:please\s+)?(?:what|who|when|where|why|which)\s+(?:is|are|was|were|does|do|did)\s+(?:the\s+|a\s+|an\s+)?", re.I
+)
+
+
+def clean_query(query: str) -> str:
+    """Turn a chatty question into search keywords: engines answer 'what is the latest X?' with generic news."""
+    query = " ".join((query or "").split())
+    words = [w for w in query.split() if w.lower().strip("?!.,") not in HINGLISH_FILLER]
+    if len(words) >= 2:
+        query = " ".join(words)
+    stripped = _LEADING_QUESTION.sub("", query).strip(" ?!.,")
+    return stripped if len(stripped.split()) >= 2 else query.strip(" ?!.,") or query
+
+
+def _terms(text: str) -> list[str]:
+    return [t for t in re.findall(r"\w+", text.lower()) if len(t) > 1 and t not in STOPWORDS]
+
+
+def is_on_topic(results: list[WebResult], query: str) -> bool:
+    """True when some result mentions at least 60% of the query's keywords (always true for keyword-less queries)."""
+    terms = set(_terms(query))
+    if not terms:
+        return True
+    need = max(1, -(-len(terms) * 3 // 5))  # ceil(60%)
+    for item in results:
+        haystack = set(_terms(f"{item.title} {item.snippet} {item.url}"))
+        if len(terms & haystack) >= need:
+            return True
+    return False
+
 
 def search(query: str, limit: int = 5, backends=None) -> tuple[list[WebResult], str, list[str]]:
     """Return (results, backend name, failure notes). Never raises; results may be empty."""
-    query = " ".join((query or "").split())[:MAX_QUERY_CHARS]
+    query = clean_query(" ".join((query or "").split())[:MAX_QUERY_CHARS])[:MAX_QUERY_CHARS]
     if not query:
         return [], "", ["empty query"]
     notes = []
@@ -150,9 +186,9 @@ def search(query: str, limit: int = 5, backends=None) -> tuple[list[WebResult], 
         except Exception as error:  # network errors, bad JSON, layout changes: try the next backend
             notes.append(f"{name}: {type(error).__name__}")
             continue
-        if results:
+        if results and is_on_topic(results, query):
             return results, name, notes
-        notes.append(f"{name}: no results")
+        notes.append(f"{name}: " + ("off-topic results" if results else "no results"))
     return [], "", notes
 
 
@@ -194,3 +230,15 @@ def markdown_links(results: list[WebResult]) -> str:
         title = re.sub(r"[\[\]()]", "", item.title)[:60].strip() or item.url
         links.append(f"[{number}. {title}]({item.url.replace(')', '%29')})")
     return " · ".join(links)
+
+
+def html_links(results: list[WebResult]) -> str:
+    """Numbered source links as escaped HTML, for st.markdown(unsafe_allow_html=True) in a readable colour."""
+    links = []
+    for number, item in enumerate(results, 1):
+        title = html.escape(item.title[:60].strip() or item.url, quote=True)
+        links.append(
+            f'<a href="{html.escape(item.url, quote=True)}" target="_blank" rel="noopener noreferrer" '
+            f'style="color:#f2c66d;text-decoration:underline">{number}. {title}</a>'
+        )
+    return " &middot; ".join(links)
