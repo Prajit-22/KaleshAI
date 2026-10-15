@@ -24,7 +24,10 @@ class AppFlowTests(unittest.TestCase):
     def test_hinglish_prompt_and_hosted_chat_wiring(self):
         import os
         from pathlib import Path
-        from streamlit.testing.v1 import AppTest
+        try:
+            from streamlit.testing.v1 import AppTest
+        except ImportError:
+            self.skipTest("Install requirements.txt to run the optional UI smoke test")
         with patch.dict(os.environ, {"GROQ_API_KEY": "test-placeholder", "OPENAI_MODEL": "openai/gpt-oss-20b"}), patch("llm.complete", return_value="Haan bhai, kya scene hai?") as client:
             app = AppTest.from_file(str(Path(__file__).with_name("app.py"))).run()
             self.assertFalse(app.exception)
