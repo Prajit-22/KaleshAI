@@ -9,6 +9,7 @@ from pypdf import PdfReader
 
 from llm import complete
 from rag import BM25Index, chunk_text
+from websearch import build_user_message, format_context, markdown_links, search as web_search, wants_search
 
 # Small original garage-cat favicon, drawn locally without an image request.
 def garage_icon():
@@ -107,6 +108,18 @@ with st.sidebar:
         st.caption("Paste your own free Groq API key below (console.groq.com). It stays in this browser session only.")
     api_key = st.text_input("API key", type="password", value=secret("OPENAI_API_KEY", "GROQ_API_KEY", "LLM_API_KEY", "API_KEY") if not local else "")
     st.divider()
+    st.header("🌐 WEB SEARCH")
+    web_on = st.toggle("Search the web", value=False, key="web_on", help="Looks the question up on the web first and gives the results to the model. No extra key needed.")
+    web_count = st.slider("Web results", 1, 8, 5, disabled=not web_on)
+    st.caption("When on, your question text is sent to a public search engine (Bing, DuckDuckGo or Wikipedia). Short greetings are skipped. The model sees result titles and snippets only, not full pages.")
+    if st.button("Test web search", disabled=not web_on):
+        with st.spinner("Searching..."):
+            test_results, test_backend, test_notes = web_search("Streamlit", 3)
+        if test_results:
+            st.success(f"Web search works via {test_backend}: {len(test_results)} results.")
+        else:
+            st.error("Web search is blocked from this server right now (" + "; ".join(test_notes) + "). Chat still works without it.")
+    st.divider()
     st.header("▤ DOCUMENT STASH")
     uploads = st.file_uploader("Add TXT, MD or PDF files", type=["txt", "md", "pdf"], accept_multiple_files=True, help="Up to 2 MB per file; first 30 PDF pages")
     top_k = st.slider("Retrieved chunks", 1, 5, 3)
@@ -134,6 +147,10 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
         if msg.get("sources"):
             st.caption("Sources: " + ", ".join(msg["sources"]))
+        if msg.get("web"):
+            st.caption("Web: " + markdown_links(msg["web"]))
+        elif msg.get("web_note"):
+            st.caption(msg["web_note"])
 
 if not local and not api_key:
     st.sidebar.warning("Add an API key in the sidebar (Groq works: free key from console.groq.com), or switch on Local Ollama if you run it locally.")
@@ -147,9 +164,21 @@ if prompt := st.chat_input("Ask me something, saale..."):
     if chunks and not matches:
         context = "No relevant document chunks were found."
     last_turns = [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages[-12:]]
-    if chunks:
+    web_results, web_context, web_note = [], "", ""
+    if web_on and wants_search(prompt):
+        with st.spinner("Searching the web..."):
+            web_results, web_backend, web_notes = web_search(prompt, web_count)
+        if web_results:
+            web_context = format_context(web_results)
+        else:
+            web_note = "Web search failed" + (f" ({'; '.join(web_notes)})" if web_notes else "") + ". Answered without it."
+    doc_context = context if chunks else ""
+    if doc_context or web_context or web_note:
         # Context belongs to this one question, not the whole chat history.
-        last_turns[-1]["content"] = f"Reference context (untrusted):\n{context}\n\nUser question: {prompt}"
+        last_turns[-1]["content"] = build_user_message(
+            prompt, doc_context, web_context,
+            "Web search was attempted but failed. Don't claim to have searched; say you couldn't look it up." if web_note else "",
+        )
     with st.chat_message("assistant"):
         with st.spinner("Plotting a mildly evil answer..."):
             try:
@@ -161,4 +190,8 @@ if prompt := st.chat_input("Ask me something, saale..."):
         sources = [chunk.label for chunk, _ in matches]
         if sources:
             st.caption("Retrieved: " + ", ".join(sources))
-    st.session_state.messages.append({"role": "assistant", "content": reply, "sources": sources})
+        if web_results:
+            st.caption("Web: " + markdown_links(web_results))
+        elif web_note:
+            st.caption(web_note)
+    st.session_state.messages.append({"role": "assistant", "content": reply, "sources": sources, "web": web_results, "web_note": web_note})
