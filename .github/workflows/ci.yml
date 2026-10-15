@@ -22,7 +22,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Run offline tests
-        run: python -m unittest -v test_core.py
+        run: python -m unittest discover -v -p "test_*.py"
 
       - name: Check that the app modules compile
-        run: python -m py_compile app.py rag.py llm.py
+        run: python -m py_compile app.py rag.py llm.py websearch.py
