@@ -32,6 +32,19 @@ The app starts with Local Ollama off and Groq defaults prefilled (`https://api.g
 
 Groq lists GPT-OSS 20B as a production text/chat model. Its current [models page](https://console.groq.com/docs/models) labels Llama 3.1 8B Instant as Enterprise, so that model can return `model_not_found` on accounts without access. If you already have the app open, replace the sidebar Model with `openai/gpt-oss-20b` and send a new message. A fresh page uses the new default unless `OPENAI_MODEL` overrides it. Provider access and rate limits depend on your account; never share your key in chat.
 
+## Arcade interface & language
+
+The interface uses original inline vector highway artwork with a dusk arcade palette,
+responsive panels, soft chat-entry motion and button transitions. No game assets,
+external fonts, JavaScript animation libraries or art downloads are used. The device's
+`prefers-reduced-motion` setting disables motion.
+
+The persona defaults to Roman-script Hinglish and treats casual swearing aimed at
+the bot as friendly banter, not a reason to refuse. It avoids identity-based slurs
+and targeted harassment. Provider safety rules still apply: prompt examples cannot
+guarantee that every model will follow the language or accept every phrase.
+The app-flow test uses a mocked reply; it does not prove live model behaviour.
+
 ## RAG path
 
 Upload a TXT, MD, or text-based PDF (2 MB/file, first 30 PDF pages). The app extracts text, creates overlapping chunks, retrieves them with lexical BM25, passes matching chunks to the selected LLM, and displays their source labels. Scanned PDFs need OCR. Lexical retrieval can miss synonyms. Retrieved labels show what was supplied to the model, not proof that every statement is supported.
