@@ -7,6 +7,7 @@ from pathlib import Path
 import streamlit as st
 from pypdf import PdfReader
 
+from workbench import TASKS, document_context, reply_export, conversation_export
 from llm import complete
 from rag import BM25Index, chunk_text
 from websearch import build_user_message, format_context, html_links, search as web_search, wants_search
@@ -94,6 +95,8 @@ def extract(upload):
         text = "\n".join(page.extract_text() or "" for page in PdfReader(BytesIO(data)).pages[:30])
     else:
         text = data.decode("utf-8", errors="replace")
+    if not text.strip():
+        raise ValueError("No readable text. Scanned PDFs need OCR before upload.")
     return name, text[:120_000]
 
 
@@ -113,6 +116,10 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+requested_task = None
 tools_panel = st.popover("🛠 Web search & documents")
 with tools_panel:
     st.markdown("**🌐 Web search**")
@@ -128,26 +135,63 @@ with tools_panel:
             st.error("Web search is blocked from this server right now (" + "; ".join(test_notes) + "). Chat still works without it.")
     st.divider()
     st.markdown("**▤ Documents**")
-    uploads = st.file_uploader("Add TXT, MD or PDF files", type=["txt", "md", "pdf"], accept_multiple_files=True, help="Up to 2 MB per file; first 30 PDF pages")
+    uploads = st.file_uploader("Add TXT, MD or PDF files", type=["txt", "md", "pdf"], accept_multiple_files=True, help="Up to 2 MB per file, 5 files total; first 30 PDF pages and 120,000 characters per file")
     top_k = st.slider("Retrieved chunks", 1, 5, 3)
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+chunks, documents = [], []
+with tools_panel:
+    if len(uploads or []) > 5:
+        st.warning("Only the first 5 files are read. Remove extras to choose different files.")
+    for number, upload in enumerate((uploads or [])[:5], 1):
+        try:
+            name, text = extract(upload)
+            label = f"{number}: {name}"
+            documents.append((label, text))
+            chunks.extend(chunk_text(text, label))
+        except Exception as error:
+            st.warning(f"Could not read {upload.name}: {error}")
+    if chunks:
+        st.success(f"Indexed {len(chunks)} chunks from {len(documents)} readable files")
+    selected_doc = st.selectbox("Work with", ["All uploaded documents"] + [name for name, _ in documents])
+    active_chunks = [c for c in chunks if selected_doc == "All uploaded documents" or c.source == selected_doc]
+    st.caption("Chat uses matching excerpts from this selection. Quick jobs use all extracted text when it fits, otherwise clearly labelled samples. No OCR. Nothing is sent until you ask or run a job.")
+    if selected_doc != "All uploaded documents":
+        selected_text = dict(documents)[selected_doc]
+        with st.expander("Preview extracted text"):
+            st.text(selected_text[:3000])
+            if len(selected_text) > 3000:
+                st.caption("Preview: first 3,000 characters only.")
+        st.download_button("Download extracted text", selected_text, "kaleshai-extracted.txt", "text/plain", key="extract_download")
+    job_context, job_sources, coverage = document_context(active_chunks)
+    if active_chunks:
+        st.caption(coverage)
+    job = st.selectbox("Document job", list(TASKS))
+    if st.button("Run document job", disabled=not active_chunks or (not local and not api_key.strip())):
+        requested_task = job
+    if active_chunks and not local and not api_key.strip():
+        st.caption("Add your own API key in the controls drawer to run a document job. Preview and downloads need no key.")
+    st.divider()
+    st.markdown("**↓ Save your work**")
+    answers = [m for m in st.session_state.messages if m["role"] == "assistant" and not m.get("failed")]
+    if answers:
+        answer_number = st.selectbox("Answer to save", list(range(len(answers))), index=len(answers) - 1,
+                                     format_func=lambda i: f"Answer {i + 1}: {answers[i]['content'][:50]}")
+        exported = reply_export(answers[answer_number])
+        st.download_button("Download answer (.md)", exported, "kaleshai-notes.md", "text/markdown", key="answer_md")
+        st.download_button("Download answer (.txt)", exported, "kaleshai-notes.txt", "text/plain", key="answer_txt")
+    if st.session_state.messages:
+        st.download_button("Download conversation (.md)", conversation_export(st.session_state.messages),
+                           "kaleshai-chat.md", "text/markdown", key="chat_md")
+    else:
+        st.caption("Your answers and conversation can be downloaded here after a chat. Downloads are local files, never shares or sends.")
 
-chunks = []
-for upload in uploads or []:
-    try:
-        name, text = extract(upload)
-        chunks.extend(chunk_text(text, name))
-    except Exception as error:
-        tools_panel.warning(f"Could not read {upload.name}: {error}")
-index = BM25Index(chunks)
-if chunks:
-    tools_panel.success(f"Indexed {len(chunks)} chunks from {len(uploads)} files")
+index = BM25Index(active_chunks)
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
+        if msg.get("coverage"):
+            st.caption(msg["coverage"])
         if msg.get("sources"):
             st.caption("Sources: " + ", ".join(msg["sources"]))
         if msg.get("web"):
@@ -158,43 +202,53 @@ for msg in st.session_state.messages:
 if not local and not api_key:
     st.sidebar.warning("Add an API key in the sidebar (Groq works: free key from console.groq.com), or switch on Local Ollama if you run it locally.")
 
-if prompt := st.chat_input("Ask me something, saale..."):
+chat_prompt = st.chat_input("Ask me something, saale...")
+prompt = f"{requested_task}: {selected_doc}" if requested_task else chat_prompt
+if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
     matches = index.search(prompt, k=top_k)
     context = "\n\n".join(f"[{chunk.label}]\n{chunk.text}" for chunk, _ in matches)
-    if chunks and not matches:
+    if active_chunks and not matches:
         context = "No relevant document chunks were found."
+    if requested_task:
+        context = coverage + "\n\n" + job_context
     last_turns = [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages[-12:]]
     web_results, web_context, web_note = [], "", ""
-    if web_on and wants_search(prompt):
+    if web_on and not requested_task and wants_search(prompt):
         with st.spinner("Searching the web..."):
             web_results, web_backend, web_notes = web_search(prompt, web_count)
         if web_results:
             web_context = format_context(web_results)
         else:
             web_note = "Web search failed" + (f" ({'; '.join(web_notes)})" if web_notes else "") + ". Answered without it."
-    doc_context = context if chunks else ""
+    doc_context = context if active_chunks else ""
+    model_prompt = TASKS[requested_task] if requested_task else prompt
     if doc_context or web_context or web_note:
         # Context belongs to this one question, not the whole chat history.
         last_turns[-1]["content"] = build_user_message(
-            prompt, doc_context, web_context,
+            model_prompt, doc_context, web_context,
             "Web search was attempted but failed. Don't claim to have searched; say you couldn't look it up." if web_note else "",
         )
+    failed = False
     with st.chat_message("assistant"):
         with st.spinner("Plotting a mildly evil answer..."):
             try:
                 reply = complete([{"role": "system", "content": SYSTEM}] + last_turns, base, model, api_key.strip())
             except Exception as error:
+                failed = True
                 hint = "Start Ollama and pull the model, or check the URL and model." if local else "Check your provider URL, model and API key."
                 reply = f"Model error: {error}. {hint}"
         st.markdown(reply)
-        sources = [chunk.label for chunk, _ in matches]
+        sources = job_sources if requested_task else [chunk.label for chunk, _ in matches]
+        if requested_task:
+            st.caption(coverage)
         if sources:
             st.caption("Retrieved: " + ", ".join(sources))
         if web_results:
             st.markdown("<small>Web: " + html_links(web_results) + "</small>", unsafe_allow_html=True)
         elif web_note:
             st.caption(web_note)
-    st.session_state.messages.append({"role": "assistant", "content": reply, "sources": sources, "web": web_results, "web_note": web_note})
+    st.session_state.messages.append({"role": "assistant", "content": reply, "sources": sources, "web": web_results, "web_note": web_note, "coverage": coverage if requested_task else "", "failed": failed})
+    st.rerun()
