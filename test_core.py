@@ -20,6 +20,24 @@ class HostedDefaultTests(unittest.TestCase):
         self.assertEqual(defaults, ["openai/gpt-oss-20b"])
 
 
+class AppFlowTests(unittest.TestCase):
+    def test_hinglish_prompt_and_hosted_chat_wiring(self):
+        import os
+        from pathlib import Path
+        from streamlit.testing.v1 import AppTest
+        with patch.dict(os.environ, {"GROQ_API_KEY": "test-placeholder", "OPENAI_MODEL": "openai/gpt-oss-20b"}), patch("llm.complete", return_value="Haan bhai, kya scene hai?") as client:
+            app = AppTest.from_file(str(Path(__file__).with_name("app.py"))).run()
+            self.assertFalse(app.exception)
+            app.chat_input[0].set_value("aur bata saale").run()
+            self.assertFalse(app.exception)
+            messages, base, model, key = client.call_args.args
+            self.assertIn("Roman/Latin", messages[0]["content"])
+            self.assertIn("Don't refuse", messages[0]["content"])
+            self.assertEqual(messages[-1]["content"], "aur bata saale")
+            self.assertEqual(model, "openai/gpt-oss-20b")
+            self.assertIn("Haan bhai", app.chat_message[-1].markdown[0].value)
+
+
 class RagTests(unittest.TestCase):
     def test_retrieves_relevant_source(self):
         chunks = chunk_text("Python builds useful services. " * 12, "python.md", size=15, overlap=3)
