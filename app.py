@@ -70,7 +70,7 @@ with st.sidebar:
     local = st.toggle("Local Ollama", value=False, help="Turn on to use Ollama on your own machine (no API key). Leave off for hosted use.")
     default_base = "http://localhost:11434/v1" if local else os.getenv("OPENAI_BASE_URL", "https://api.groq.com/openai/v1")
     base = st.text_input("OpenAI-compatible base URL", value=default_base)
-    model = st.text_input("Model", value=("llama3.2" if local else os.getenv("OPENAI_MODEL", "llama-3.1-8b-instant")))
+    model = st.text_input("Model", value=("llama3.2" if local else os.getenv("OPENAI_MODEL", "openai/gpt-oss-20b")))
     if not local:
         st.caption("Paste your own free Groq API key below (console.groq.com). It stays in this browser session only.")
     api_key = st.text_input("API key", type="password", value=secret("OPENAI_API_KEY", "GROQ_API_KEY", "LLM_API_KEY", "API_KEY") if not local else "")
