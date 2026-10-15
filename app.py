@@ -108,7 +108,14 @@ with st.sidebar:
         st.caption("Paste your own free Groq API key below (console.groq.com). It stays in this browser session only.")
     api_key = st.text_input("API key", type="password", value=secret("OPENAI_API_KEY", "GROQ_API_KEY", "LLM_API_KEY", "API_KEY") if not local else "")
     st.divider()
-    st.header("🌐 WEB SEARCH")
+    st.caption("Demo app. Chats and uploaded files stay in this browser session; the chosen model provider receives your messages and retrieved excerpts. Don't upload secrets.")
+    if st.button("Clear conversation"):
+        st.session_state.messages = []
+        st.rerun()
+
+tools_panel = st.popover("🛠 Web search & documents")
+with tools_panel:
+    st.markdown("**🌐 Web search**")
     web_on = st.toggle("Search the web", value=False, key="web_on", help="Looks the question up on the web first and gives the results to the model. No extra key needed.")
     web_count = st.slider("Web results", 1, 8, 5, disabled=not web_on)
     st.caption("When on, your question text is sent to a public search engine (Bing, DuckDuckGo or Wikipedia). Short greetings are skipped. The model sees result titles and snippets only, not full pages.")
@@ -120,13 +127,9 @@ with st.sidebar:
         else:
             st.error("Web search is blocked from this server right now (" + "; ".join(test_notes) + "). Chat still works without it.")
     st.divider()
-    st.header("▤ DOCUMENT STASH")
+    st.markdown("**▤ Documents**")
     uploads = st.file_uploader("Add TXT, MD or PDF files", type=["txt", "md", "pdf"], accept_multiple_files=True, help="Up to 2 MB per file; first 30 PDF pages")
     top_k = st.slider("Retrieved chunks", 1, 5, 3)
-    st.caption("Demo app. Chats and uploaded files stay in this browser session; the chosen model provider receives your messages and retrieved excerpts. Don't upload secrets.")
-    if st.button("Clear conversation"):
-        st.session_state.messages = []
-        st.rerun()
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -137,10 +140,10 @@ for upload in uploads or []:
         name, text = extract(upload)
         chunks.extend(chunk_text(text, name))
     except Exception as error:
-        st.sidebar.warning(f"Could not read {upload.name}: {error}")
+        tools_panel.warning(f"Could not read {upload.name}: {error}")
 index = BM25Index(chunks)
 if chunks:
-    st.sidebar.success(f"Indexed {len(chunks)} chunks from {len(uploads)} files")
+    tools_panel.success(f"Indexed {len(chunks)} chunks from {len(uploads)} files")
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
