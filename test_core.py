@@ -5,6 +5,21 @@ from rag import BM25Index, Chunk, chunk_text
 from llm import complete
 
 
+class HostedDefaultTests(unittest.TestCase):
+    def test_hosted_default_uses_current_groq_production_model(self):
+        import ast
+        from pathlib import Path
+        tree = ast.parse(Path(__file__).with_name("app.py").read_text())
+        defaults = [node.args[1].value for node in ast.walk(tree)
+                    if isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "getenv"
+                    and len(node.args) == 2
+                    and isinstance(node.args[0], ast.Constant)
+                    and node.args[0].value == "OPENAI_MODEL"]
+        self.assertEqual(defaults, ["openai/gpt-oss-20b"])
+
+
 class RagTests(unittest.TestCase):
     def test_retrieves_relevant_source(self):
         chunks = chunk_text("Python builds useful services. " * 12, "python.md", size=15, overlap=3)
