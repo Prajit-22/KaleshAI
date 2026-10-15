@@ -31,6 +31,14 @@ _garage_bg = 'UklGRvZmAwBXRUJQVlA4IOpmAwCwMgmdASoABdACPikQh0KhoQpMyyIMAUJTd+JLi3
 # Original generated artwork, bundled inline; no third-party image requests.
 st.markdown('<style>\n.stApp {background: #111322; color: #f6f1e7;}\n.stApp::before {content: ""; position: fixed; inset: 0; background: linear-gradient(180deg, rgba(9,12,22,.32) 0%, rgba(9,12,22,.35) 40%, rgba(9,12,22,.4) 100%), url("data:image/webp;base64,__GARAGE_BG__") center bottom / cover no-repeat; pointer-events: none;}\n[data-testid="stHeader"] {background: transparent;}\n[data-testid="stSidebar"] {background: linear-gradient(165deg, #384a47 0%, #273b39 55%, #32443d 100%) !important; border-right: 2px solid #cfb47388; box-shadow: 12px 0 40px #0004; transition: transform .4s cubic-bezier(.2,.75,.3,1), width .4s ease;}\n[data-testid="stMainBlockContainer"] {position: relative; max-width: 880px; padding-top: 4rem; padding-bottom: 7rem;}\nh1 {font-size: clamp(2.6rem, 6vw, 4.5rem) !important; font-weight: 850 !important; letter-spacing: -.055em; color: #fff6df !important; text-shadow: 4px 4px 0 #773e5a; padding-bottom: .3rem !important;}\nh2, h3 {color: #f2d495 !important;}\np, label {color: #f1ecdf;}\n[data-testid="stCaptionContainer"] p {color: #c2c5ce; line-height: 1.7;}\n.arcade-badge {animation: arrive .4s ease-out; display: inline-block; font: 600 .72rem/1.4 ui-monospace, monospace; letter-spacing: .16em; color: #f2d495; border: 1px solid #f2d49566; padding: .45rem .7rem; background: #181c2dd9; box-shadow: 3px 3px 0 #663b51; margin-bottom: .6rem;}\n.arcade-strip {display: flex; flex-wrap: wrap; gap: .6rem; margin: .4rem 0 1.1rem;}\n.arcade-strip span {font: .73rem/1.4 ui-monospace, monospace; letter-spacing: .04em; color: #b6d8c0; padding: .4rem .65rem; border: 1px solid #b6d8c033; background: #141b29d9;}\n[data-testid="stAlert"] {background: rgba(20,27,42,.94); border: 1px solid #b4c3dc33; border-radius: 14px;}\n[data-testid="stChatMessage"] {background: rgba(18,23,37,.95); border: 1px solid #b6d8c02e; border-radius: 16px; padding: 1.1rem; box-shadow: 0 8px 25px #0003; animation: arrive .3s ease-out;}\n[data-testid="stSidebar"] {color-scheme: dark; text-shadow: none !important;}\n[data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] h2 {text-shadow: none !important; filter: none !important;}\n[data-testid="stTextInput"] input, [data-testid="stTextInput"] [data-baseweb="input"], [data-testid="stTextInput"] [data-baseweb="base-input"] {background: #171d2b !important; color: #f5f1e8 !important; border-radius: 10px; color-scheme: dark; text-shadow: none !important;}\n[data-testid="stTextInput"] input {caret-color: #f2d495; -webkit-text-fill-color: #f5f1e8 !important;}\n[data-testid="stTextInput"] input:-webkit-autofill, [data-testid="stTextInput"] input:-webkit-autofill:hover, [data-testid="stTextInput"] input:-webkit-autofill:focus {box-shadow: 0 0 0 1000px #171d2b inset !important; -webkit-text-fill-color: #f5f1e8 !important; caret-color: #f2d495;}\n[data-testid="stTextInput"] input:focus {background: #171d2b !important;}\n[data-testid="stBottom"] > div {background: transparent !important;}\n[data-testid="stChatInput"] {background: #1d2538; border: 1px solid #b6d8c066; border-radius: 16px; box-shadow: 0 12px 40px #0007; transition: border-color .2s, box-shadow .2s;}\n[data-testid="stChatInput"]:focus-within {border-color: #f2d495; box-shadow: 0 0 0 3px #f2d49522;}\n[data-testid="stChatInput"] textarea {color: #fff6df;}\n[data-testid="stButton"] button {border-radius: 10px; border: 1px solid #b6d8c055; background: #20283a; color: #f1ecdf; transition: transform .18s, border-color .18s;}\n[data-testid="stButton"] button:hover {transform: translateY(-2px); border-color: #f2d495;}\n@keyframes arrive {from {opacity: 0; transform: translateY(8px);} to {opacity: 1; transform: translateY(0);}}\n@media (max-width: 640px) {[data-testid="stMainBlockContainer"] {padding-top: 2.5rem; padding-left: 1.2rem; padding-right: 1.2rem;} .stApp::before {inset: 0 0 auto; height: 56.25vw; background-position: center top; background-size: 100% auto; -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 78%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, #000 78%, transparent 100%);} h1 {font-size: 3rem !important;} .arcade-strip {gap: .4rem;} [data-testid="stChatMessage"] {padding: .8rem;}}\n[data-testid="stSidebar"][data-collapsed="false"] {animation: garage-open .4s cubic-bezier(.2,.75,.3,1);}\n@keyframes garage-open {from {opacity: .3; transform: translateX(-28px);} to {opacity: 1; transform: translateX(0);}}\n@media (prefers-reduced-motion: reduce) {*, *::before, *::after {animation: none !important; transition: none !important; scroll-behavior: auto !important;}}\n</style>\n<style>\n[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {gap: .65rem;}\n[data-testid="stSidebar"] h2 {font: 700 1.2rem/1.4 ui-monospace, monospace !important; letter-spacing: .03em;}\n[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {color: #ded5c3 !important;}\n[data-testid="stSidebar"] label p {color: #fff6df !important;}\n[data-testid="stSidebar"] [data-testid="stTextInput"] {border-left: 3px solid #cfb47388; padding-left: .6rem;}\n[data-testid="stSidebar"] [data-testid="stTextInput"] input, [data-testid="stSidebar"] [data-baseweb="input"], [data-testid="stSidebar"] [data-baseweb="base-input"] {background: #1c302f !important;}\n[data-testid="stSidebar"] input:-webkit-autofill {box-shadow: 0 0 0 1000px #1c302f inset !important;}\n[data-testid="stExpandSidebarButton"], [data-testid="stSidebarCollapsedControl"] button, [data-testid="stSidebarCollapseButton"] button {background: #415850 !important; border: 1px solid #cfb473 !important; border-radius: 12px; color: #fff6df !important; transition: transform .25s, background .25s;}\n[data-testid="stExpandSidebarButton"]:hover, [data-testid="stSidebarCollapsedControl"] button:hover, [data-testid="stSidebarCollapseButton"] button:hover {transform: scale(1.12) rotate(-5deg); background: #57705f !important;}\n[data-testid="stSidebar"][data-collapsed="false"] {animation: garage-open .4s cubic-bezier(.2,.75,.3,1);}\n@keyframes garage-open {from {opacity: .3; transform: translateX(-28px);} to {opacity: 1; transform: translateX(0);}}\n@media (prefers-reduced-motion: reduce) {*, *::before, *::after {animation: none !important; transition: none !important;}}\n</style>'.replace("__GARAGE_BG__", _garage_bg), unsafe_allow_html=True)
 
+st.markdown("""<style>
+[data-testid="stChatMessage"] {background: #121725 !important; opacity: 1 !important;}
+[data-testid="stChatMessage"] * {text-shadow: none !important; filter: none !important;}
+[data-testid="stChatMessage"] p, [data-testid="stChatMessage"] li, [data-testid="stChatMessage"] td {color: #f5f2e9 !important; line-height: 1.65;}
+[data-testid="stChatMessage"] [data-testid="stCaptionContainer"] p {color: #d4d9e3 !important;}
+[data-testid="stPopoverBody"] {background: #121b27 !important; color: #f5f2e9; max-height: 75vh; overflow-y: auto;}
+</style>""", unsafe_allow_html=True)
+
 SYSTEM = """You are KaleshAI, a fictional mischievous AI with playful desi banter.
 LANGUAGE: Default to natural Hinglish written in Roman/Latin letters, even for "hi".
 When the user writes Roman Hindi/Hinglish, answer in Roman Hinglish, not English-only
@@ -55,6 +63,11 @@ Assistant: Haan bhai, Roman Hinglish mein hi baat karte hain. Kya chal raha hai?
 User: mera code kaam nahi kar raha
 Assistant: Code aur error bhej bhai. Andhere mein debugging karunga toh tera code aur meri izzat, dono jayenge.
 
+CAPABILITIES: When web results are attached, the app already searched. Use them and
+cite [web #n]; do not say you cannot search. You only have snippets, not opened pages.
+You cannot submit uploaded documents to other websites or obtain their actual scores.
+For resume feedback, offer an explicitly labelled independent estimate with a stated
+rubric, never claim a third-party/ATS score or completed external submission.
 You are an independent app demo, not a human and not Instinct. Do not pretend to
 have real-world access or memories. Admit uncertainty; do not invent facts or citations.
 If reference excerpts are supplied, cite their exact [source #chunk] labels when
@@ -126,11 +139,16 @@ with tools_panel:
     web_on = st.toggle("Search the web", value=False, key="web_on", help="Looks the question up on the web first and gives the results to the model. No extra key needed.")
     web_count = st.slider("Web results", 1, 8, 5, disabled=not web_on)
     st.caption("When on, your question text is sent to a public search engine (Bing, DuckDuckGo or Wikipedia). Short greetings are skipped. The model sees result titles and snippets only, not full pages.")
+    test_query = st.text_input("Search test query", value="Streamlit", disabled=not web_on)
     if st.button("Test web search", disabled=not web_on):
         with st.spinner("Searching..."):
-            test_results, test_backend, test_notes = web_search("Streamlit", 3)
+            test_results, test_backend, test_notes = web_search(test_query, 3)
         if test_results:
             st.success(f"Web search works via {test_backend}: {len(test_results)} results.")
+            st.markdown(html_links(test_results), unsafe_allow_html=True)
+            for note in test_notes:
+                if note.startswith("Low relevance:"):
+                    st.warning(note)
         else:
             st.error("Web search is blocked from this server right now (" + "; ".join(test_notes) + "). Chat still works without it.")
     st.divider()
@@ -196,7 +214,7 @@ for msg in st.session_state.messages:
             st.caption("Sources: " + ", ".join(msg["sources"]))
         if msg.get("web"):
             st.markdown("<small>Web: " + html_links(msg["web"]) + "</small>", unsafe_allow_html=True)
-        elif msg.get("web_note"):
+        if msg.get("web_note"):
             st.caption(msg["web_note"])
 
 if not local and not api_key:
@@ -221,6 +239,7 @@ if prompt:
             web_results, web_backend, web_notes = web_search(prompt, web_count)
         if web_results:
             web_context = format_context(web_results)
+            web_note = next((n for n in web_notes if n.startswith("Low relevance:")), "")
         else:
             web_note = "Web search failed" + (f" ({'; '.join(web_notes)})" if web_notes else "") + ". Answered without it."
     doc_context = context if active_chunks else ""
@@ -229,7 +248,7 @@ if prompt:
         # Context belongs to this one question, not the whole chat history.
         last_turns[-1]["content"] = build_user_message(
             model_prompt, doc_context, web_context,
-            "Web search was attempted but failed. Don't claim to have searched; say you couldn't look it up." if web_note else "",
+            ("Web search was attempted but failed. Don't claim to have searched; say you couldn't look it up." if not web_results else web_note) if web_note else "",
         )
     failed = False
     with st.chat_message("assistant"):
@@ -248,7 +267,7 @@ if prompt:
             st.caption("Retrieved: " + ", ".join(sources))
         if web_results:
             st.markdown("<small>Web: " + html_links(web_results) + "</small>", unsafe_allow_html=True)
-        elif web_note:
+        if web_note:
             st.caption(web_note)
     st.session_state.messages.append({"role": "assistant", "content": reply, "sources": sources, "web": web_results, "web_note": web_note, "coverage": coverage if requested_task else "", "failed": failed})
     st.rerun()
