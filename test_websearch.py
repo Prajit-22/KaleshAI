@@ -202,6 +202,10 @@ class MultiIntentTests(unittest.TestCase):
         self.assertEqual(found, results)
         self.assertEqual(captured, ["resume score checker website"])
 
+    def test_generic_words_cannot_hide_wrong_subject(self):
+        wrong = [ws.WebResult("Website score checker", "https://example.com/", "Scrabble game score")]
+        self.assertFalse(ws.is_on_topic(wrong, "resume score checker website"))
+
     def test_low_relevance_results_are_returned_with_honest_caveat(self):
         off = [ws.WebResult("Unrelated", "https://example.com/", "No match")]
         found, name, notes = ws.search("resume score checker website", backends=(("test", lambda q, n: off),))
