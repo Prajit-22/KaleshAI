@@ -34,9 +34,9 @@ Groq lists GPT-OSS 20B as a production text/chat model. Its current [models page
 
 ## Arcade interface & language
 
-The interface uses original inline vector highway artwork with a dusk arcade palette,
-responsive panels, soft chat-entry motion and button transitions. No game assets,
-external fonts, JavaScript animation libraries or art downloads are used. The device's
+The interface uses original generated caricature diner artwork with a teal, violet and amber palette,
+responsive panels, soft chat-entry motion and button transitions. No copied game assets,
+external fonts, JavaScript animation libraries or third-party art downloads are used. The compressed WebP is bundled inline (about 115 KB of image data). The device's
 `prefers-reduced-motion` setting disables motion.
 
 The persona defaults to Roman-script Hinglish and treats casual swearing aimed at
