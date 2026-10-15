@@ -56,7 +56,7 @@ Files: `app.py` is the Streamlit UI and persona; `rag.py` chunks and ranks text;
 
 Turn on "Search the web" in the main-page "Web search & documents" popover. For each question that looks like a lookup (a question mark or three or more words; greetings are skipped), the app searches the web first and gives the top results (title, URL and snippet only, never full pages) to the model, which is asked to cite them as `[web #n]`. The links appear under the reply. No search API key is needed.
 
-How it works: `websearch.py` is standard-library only. It tries Bing's HTML results, then DuckDuckGo's HTML results, then the Wikipedia search API, and uses the first one that returns results. Chatty questions are rewritten into keywords first ("what is the latest X?" becomes "latest X"), and results that don't mention most of those keywords are rejected so the next backend is tried. Scraped result pages are not a stable API: a search engine can block a hosting provider's IP or change its layout. When every backend fails, the reply says so, the model is told not to claim it searched, and chat keeps working. "Test web search" in the same popover checks the backends from the server the app runs on. Search results are untrusted text and are passed to the model as reference material, not instructions. Your question text goes to the search engine. Local Ollama can use web search too.
+How it works: `websearch.py` is standard-library only. It tries Bing's HTML results, then DuckDuckGo's HTML results, then the Wikipedia search API, and uses the first one that returns results. Chatty questions are rewritten into keywords first ("what is the latest X?" becomes "latest X"), and a lightweight keyword check tries the next backend if results look unrelated. Multi-intent requests separate the web lookup from a follow-up about uploaded documents; common resume-scoring requests become "resume score checker website". If every available backend looks low-relevance, the first nonempty results are returned with a clear caveat instead of pretending the search failed. Scraped result pages are not a stable API: a search engine can block a hosting provider's IP or change its layout. When every backend fails, the reply says so, the model is told not to claim it searched, and chat keeps working. "Test web search" in the same popover checks the backends from the server the app runs on. Search results are untrusted text and are passed to the model as reference material, not instructions. Your question text goes to the search engine. Local Ollama can use web search too.
 
 Offline tests for the parsers, fallback order, failure handling and prompt building are in `test_websearch.py`; no test touches the network.
 
@@ -114,3 +114,14 @@ for later. The original art, persona and controls drawer are unchanged.
 coverage, chunk labels, export fidelity and a mocked document-job UI flow.
 Offline tests do not prove live Groq responses. To run all UI smoke tests locally,
 install `requirements.txt` before `python -m unittest discover -v`.
+
+### Search diagnostics and honest resume feedback
+
+Use **Search test query** and **Test web search** in the popover to test your own
+wording without an API key. It shows actual source links and any low-relevance
+warning. The model is explicitly told when results were already fetched, and
+that it sees snippets only. Finding a resume-checker website does not submit
+your uploaded resume there. The app has no third-party scoring integration;
+any in-app resume score must be labelled an independent estimate with a rubric,
+not a real ATS or external service score. Chat cards now use opaque backgrounds
+and no text shadow for readable answers over the artwork.
