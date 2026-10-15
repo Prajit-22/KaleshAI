@@ -1,4 +1,4 @@
-# KaleshAI 😈
+# KaleshAI
 
 **Live demo:** https://kaleshai.streamlit.app
 
@@ -35,8 +35,9 @@ Groq lists GPT-OSS 20B as a production text/chat model. Its current [models page
 ## Arcade interface & language
 
 The interface uses original generated caricature garage artwork with a male biker and a stylish adult woman biker, cats and dogs with a teal, violet and amber palette,
-an olive-teal garage control drawer, a minimal name-only main page, soft chat-entry motion and drawer/button transitions. No copied game assets,
-external fonts, JavaScript animation libraries or third-party art downloads are used. The compressed WebP is bundled inline (about 126 KB of image data). The device's
+a torn cloth KALESH AI banner painted into the wall, an original cat favicon, an olive-teal garage control drawer,
+soft chat-entry motion and drawer/button transitions. The male biker has longer hair and a lighter complexion. No copied game assets,
+external fonts, JavaScript animation libraries or third-party art downloads are used. The compressed WebP is bundled inline (about 177 KB of image data). The device's
 `prefers-reduced-motion` setting disables motion.
 
 The persona defaults to Roman-script Hinglish and treats casual swearing aimed at
