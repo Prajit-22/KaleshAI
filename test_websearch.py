@@ -178,5 +178,42 @@ class QueryTests(unittest.TestCase):
         self.assertIn("&amp;c=&quot;2&quot;", text)
 
 
+class MultiIntentTests(unittest.TestCase):
+    exact = "can you search the web for a website that gives scores to resumes and check the uploaded documents score?"
+
+    def test_exact_user_query_extracts_resume_lookup(self):
+        self.assertEqual(ws.clean_query(self.exact), "resume score checker website")
+        self.assertEqual(ws.clean_query("bhai resume ka score check karne ki website batao"), "resume score checker website")
+        self.assertEqual(ws.clean_query("find a resume ATS checker and review my uploaded file"), "resume score checker website")
+
+    def test_secondary_document_job_is_not_a_search_keyword(self):
+        query = ws.clean_query("search the web for Python documentation and summarize the uploaded document")
+        self.assertIn("Python documentation", query)
+        self.assertNotIn("uploaded", query)
+
+    def test_realistic_resume_result_survives_long_query(self):
+        results = [ws.WebResult("Resume Worded: Resume Checker", "https://resumeworded.com/", "Get a score and feedback")]
+        self.assertTrue(ws.is_on_topic(results, ws.clean_query(self.exact)))
+        captured = []
+        def backend(query, limit):
+            captured.append(query)
+            return results
+        found, name, notes = ws.search(self.exact, backends=(("test", backend),))
+        self.assertEqual(found, results)
+        self.assertEqual(captured, ["resume score checker website"])
+
+    def test_low_relevance_results_are_returned_with_honest_caveat(self):
+        off = [ws.WebResult("Unrelated", "https://example.com/", "No match")]
+        found, name, notes = ws.search("resume score checker website", backends=(("test", lambda q, n: off),))
+        self.assertEqual(found, off)
+        self.assertTrue(any(n.startswith("Low relevance:") for n in notes))
+
+    def test_model_is_told_search_already_happened_and_limits(self):
+        message = ws.build_user_message(self.exact, web_context="RESULTS", web_note="Low relevance: uncertain")
+        self.assertIn("ALREADY searched", message)
+        self.assertIn("only see these snippets", message)
+        self.assertIn("Low relevance: uncertain", message)
+
+
 if __name__ == "__main__":
     unittest.main()
