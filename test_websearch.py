@@ -70,7 +70,7 @@ class SearchFallbackTests(unittest.TestCase):
             return []
 
         def good(query, limit):
-            return [ws.WebResult("T", "https://t.example", "s")]
+            return [ws.WebResult("hello world", "https://t.example", "s")]
 
         results, name, notes = ws.search("hello world", backends=(("A", broken), ("B", empty), ("C", good)))
         self.assertEqual(name, "C")
@@ -142,6 +142,40 @@ class DisplayTests(unittest.TestCase):
         text = ws.markdown_links([ws.WebResult("A [bad] (title)", "https://x.example/a_(b)", ""), ws.WebResult("Two", "https://y.example", "")])
         self.assertIn("[1. A bad title](https://x.example/a_(b%29)", text)
         self.assertIn("[2. Two](https://y.example)", text)
+
+
+class QueryTests(unittest.TestCase):
+    def test_clean_query_strips_question_framing(self):
+        self.assertEqual(ws.clean_query("what is the latest stable python version?"), "latest stable python version")
+        self.assertEqual(ws.clean_query("Who was the first person on the moon"), "first person on the moon")
+
+    def test_clean_query_leaves_short_or_plain_queries(self):
+        self.assertEqual(ws.clean_query("what is love?"), "what is love")
+        self.assertEqual(ws.clean_query("python 3.13 release date"), "python 3.13 release date")
+        self.assertEqual(ws.clean_query("how to bake bread?"), "how to bake bread")
+
+    def test_off_topic_results_are_detected(self):
+        news = [ws.WebResult("Fox News - Breaking News, Latest Headlines", "https://foxnews.com/", "Latest news")]
+        docs = [ws.WebResult("Download Python", "https://www.python.org/downloads/", "Latest stable Python release")]
+        self.assertFalse(ws.is_on_topic(news, "latest stable python version"))
+        self.assertTrue(ws.is_on_topic(docs, "latest stable python version"))
+        self.assertTrue(ws.is_on_topic(news, "the of and"))
+
+    def test_search_skips_off_topic_backend_and_uses_next(self):
+        news = lambda q, n: [ws.WebResult("Fox News", "https://foxnews.com/", "Latest news")]
+        wiki = lambda q, n: [ws.WebResult("History of Python", "https://en.wikipedia.org/wiki/History_of_Python", "latest stable python version history")]
+        results, name, notes = ws.search("what is the latest stable python version?", backends=(("Bing", news), ("Wikipedia", wiki)))
+        self.assertEqual(name, "Wikipedia")
+        self.assertEqual(notes, ["Bing: off-topic results"])
+
+    def test_hinglish_filler_dropped(self):
+        self.assertEqual(ws.clean_query("kya hai python ka latest version?"), "python latest version")
+
+    def test_html_links_are_escaped(self):
+        text = ws.html_links([ws.WebResult('<script>"x"</script>', 'https://x.example/a?b=1&c="2"', "")])
+        self.assertNotIn("<script>", text)
+        self.assertIn("&lt;script&gt;", text)
+        self.assertIn("&amp;c=&quot;2&quot;", text)
 
 
 if __name__ == "__main__":
