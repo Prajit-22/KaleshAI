@@ -150,6 +150,12 @@ _LEADING_QUESTION = re.compile(
 def clean_query(query: str) -> str:
     """Turn a chatty question into search keywords: engines answer 'what is the latest X?' with generic news."""
     query = " ".join((query or "").split())
+    # Keep the lookup intent; a second request about an uploaded file is local work.
+    query = re.split(r"\b(?:and|then|aur)\s+(?:can you\s+|please\s+)?(?:check|review|score|summarize|analyse|analyze)\b.*?\b(?:upload|document|file|resume)", query, maxsplit=1, flags=re.I)[0]
+    if re.search(r"\b(?:resumes?|cv)\b", query, re.I) and re.search(r"\b(?:scores?|scorings?|checker|ats)\b", query, re.I):
+        return "resume score checker website"
+    query = re.sub(r"^(?:(?:can|could|would) you\s+)?(?:please\s+)?(?:search|look)(?: the)?(?: web| internet)?(?: up)?(?: for)?\s+", "", query, flags=re.I)
+    query = re.sub(r"^(?:find|show|recommend)(?: me)?\s+", "", query, flags=re.I)
     words = [w for w in query.split() if w.lower().strip("?!.,") not in HINGLISH_FILLER]
     if len(words) >= 2:
         query = " ".join(words)
@@ -162,11 +168,11 @@ def _terms(text: str) -> list[str]:
 
 
 def is_on_topic(results: list[WebResult], query: str) -> bool:
-    """True when some result mentions at least 60% of the query's keywords (always true for keyword-less queries)."""
+    """True when some result mentions at least two useful query keywords (always true for keyword-less queries)."""
     terms = set(_terms(query))
     if not terms:
         return True
-    need = max(1, -(-len(terms) * 3 // 5))  # ceil(60%)
+    need = min(2, len(terms))
     for item in results:
         haystack = set(_terms(f"{item.title} {item.snippet} {item.url}"))
         if len(terms & haystack) >= need:
@@ -179,7 +185,7 @@ def search(query: str, limit: int = 5, backends=None) -> tuple[list[WebResult], 
     query = clean_query(" ".join((query or "").split())[:MAX_QUERY_CHARS])[:MAX_QUERY_CHARS]
     if not query:
         return [], "", ["empty query"]
-    notes = []
+    notes, fallback = [], None
     for name, backend in backends or BACKENDS:
         try:
             results = backend(query, limit)
@@ -188,7 +194,12 @@ def search(query: str, limit: int = 5, backends=None) -> tuple[list[WebResult], 
             continue
         if results and is_on_topic(results, query):
             return results, name, notes
+        if results and fallback is None:
+            fallback = (results, name)
         notes.append(f"{name}: " + ("off-topic results" if results else "no results"))
+    if fallback:
+        results, name = fallback
+        return results, name, notes + ["Low relevance: returning unverified top results; they may not answer the question."]
     return [], "", notes
 
 
@@ -213,8 +224,8 @@ def build_user_message(prompt: str, doc_context: str = "", web_context: str = ""
         parts.append(f"Reference context (untrusted):\n{doc_context}")
     if web_context:
         parts.append(
-            f"{web_context}\n\nIf you use web results, cite them by their [web #n] labels and "
-            "say when they don't answer the question. Don't claim to have opened the pages; you only see these snippets."
+            f"{web_context}\n\nThe app has ALREADY searched the web for this question. Use these results; do not say you cannot search the web. If you use web results, cite them by their [web #n] labels and "
+            "say when they don't answer the question. Don't claim to have opened the pages; you only see these snippets. " + web_note
         )
     elif web_note:
         parts.append(web_note)
