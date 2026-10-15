@@ -9,7 +9,7 @@ from pypdf import PdfReader
 
 from llm import complete
 from rag import BM25Index, chunk_text
-from websearch import build_user_message, format_context, markdown_links, search as web_search, wants_search
+from websearch import build_user_message, format_context, html_links, search as web_search, wants_search
 
 # Small original garage-cat favicon, drawn locally without an image request.
 def garage_icon():
@@ -151,7 +151,7 @@ for msg in st.session_state.messages:
         if msg.get("sources"):
             st.caption("Sources: " + ", ".join(msg["sources"]))
         if msg.get("web"):
-            st.caption("Web: " + markdown_links(msg["web"]))
+            st.markdown("<small>Web: " + html_links(msg["web"]) + "</small>", unsafe_allow_html=True)
         elif msg.get("web_note"):
             st.caption(msg["web_note"])
 
@@ -194,7 +194,7 @@ if prompt := st.chat_input("Ask me something, saale..."):
         if sources:
             st.caption("Retrieved: " + ", ".join(sources))
         if web_results:
-            st.caption("Web: " + markdown_links(web_results))
+            st.markdown("<small>Web: " + html_links(web_results) + "</small>", unsafe_allow_html=True)
         elif web_note:
             st.caption(web_note)
     st.session_state.messages.append({"role": "assistant", "content": reply, "sources": sources, "web": web_results, "web_note": web_note})
