@@ -50,7 +50,7 @@ The app-flow test uses a mocked reply; it does not prove live model behaviour.
 
 Upload a TXT, MD, or text-based PDF (2 MB/file, first 30 PDF pages). The app extracts text, creates overlapping chunks, retrieves them with lexical BM25, passes matching chunks to the selected LLM, and displays their source labels. Scanned PDFs need OCR. Lexical retrieval can miss synonyms. Retrieved labels show what was supplied to the model, not proof that every statement is supported.
 
-Files: `app.py` is the Streamlit UI and persona; `rag.py` chunks and ranks text; `llm.py` calls OpenAI-compatible endpoints; `websearch.py` is the keyless web search; `test_core.py` and `test_websearch.py` test retrieval, the mocked client and web search. Run the offline tests with `python -m unittest discover -v`; GitHub Actions runs them on Python 3.10-3.12 for every push and pull request. Uploaded files and conversation history live in the Streamlit session, not a database. The chosen model provider receives message text and retrieved excerpts. Don't upload secrets or sensitive records. This demo has no autonomous account access.
+Files: `app.py` is the Streamlit UI and persona; `rag.py` chunks and ranks text; `llm.py` calls OpenAI-compatible endpoints; `websearch.py` is the keyless web search; `test_core.py` and `test_websearch.py` test retrieval, the mocked client and web search. Run the offline tests with `python -m unittest discover -v`; GitHub Actions runs them on Python 3.10-3.14 for every push and pull request. Uploaded files and conversation history live in the Streamlit session, not a database. The chosen model provider receives message text and retrieved excerpts. Don't upload secrets or sensitive records. This demo has no autonomous account access.
 
 ## Web search
 
