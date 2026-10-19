@@ -1,4 +1,5 @@
 """KaleshAI: a playful Hinglish evil-twin assistant, with optional document RAG."""
+import html
 import os
 from PIL import Image, ImageDraw
 from io import BytesIO
@@ -10,6 +11,7 @@ from pypdf import PdfReader
 from workbench import TASKS, document_context, reply_export, conversation_export
 from llm import complete
 from rag import BM25Index, chunk_text
+import extras
 from websearch import clean_query, build_user_message, format_context, html_links, search as web_search, wants_search
 
 # Small original garage-cat favicon, drawn locally without an image request.
@@ -39,6 +41,17 @@ st.markdown("""<style>
 [data-testid="stPopoverBody"] {background: #121b27 !important; color: #f5f2e9; max-height: 75vh; overflow-y: auto;}
 </style>""", unsafe_allow_html=True)
 
+st.markdown("""<style>
+[data-testid="stPopover"] button {background: #f2d495 !important; border: 2px solid #281e24 !important; box-shadow: 3px 3px 0 #773e5a; border-radius: 10px !important;}
+[data-testid="stPopover"] button, [data-testid="stPopover"] button * {color: #281e24 !important; font-weight: 700 !important; -webkit-text-fill-color: #281e24 !important;}
+.kalesh-hero {background: rgba(18,23,37,.92); border: 2px solid #f2d49566; border-radius: 16px; padding: 1rem 1.2rem .4rem; margin: 1rem 0 .6rem; box-shadow: 5px 5px 0 #663b51; animation: arrive .4s ease-out;}
+.kalesh-hero b {color: #f2d495; font: 700 .8rem/1.4 ui-monospace, monospace; letter-spacing: .16em;}
+.kalesh-hero p {color: #f1ecdf; margin: .35rem 0 .6rem;}
+.kalesh-chip {display: inline-block; font: .72rem/1.4 ui-monospace, monospace; color: #281e24; background: #b6d8c0; border-radius: 99px; padding: .15rem .6rem; margin-left: .4rem;}
+[data-testid="stMainBlockContainer"] [data-testid="stButton"] button:hover {border-color: #f2d495; transform: translateY(-2px);}
+@media (max-width: 640px) {[data-testid="stMainBlockContainer"] {padding-top: 3rem;} .kalesh-hero {padding: .8rem;}}
+</style>""", unsafe_allow_html=True)
+
 SYSTEM = """You are KaleshAI, a fictional mischievous AI with playful desi banter.
 LANGUAGE: Default to natural Hinglish written in Roman/Latin letters, even for "hi".
 When the user writes Roman Hindi/Hinglish, answer in Roman Hinglish, not English-only
@@ -65,6 +78,7 @@ Assistant: Code aur error bhej bhai. Andhere mein debugging karunga toh tera cod
 
 CAPABILITIES: When web results are attached, the app already searched. Use them and
 cite [web #n]; do not say you cannot search. You only have snippets, not opened pages.
+When pasted-link page text is attached, you may use it and cite [page #n]; if a link could not be read, say so.
 You cannot submit uploaded documents to other websites or obtain their actual scores.
 For resume feedback, offer an explicitly labelled independent estimate with a stated
 rubric, never claim a third-party/ATS score or completed external submission.
@@ -122,6 +136,10 @@ with st.sidebar:
     model = st.text_input("Model", value=("llama3.2" if local else os.getenv("OPENAI_MODEL", "openai/gpt-oss-20b")))
     if not local:
         st.caption("Paste your own free Groq API key below (console.groq.com). It stays in this browser session only.")
+    st.divider()
+    mode = st.selectbox("Mode", list(extras.MODES), help="Changes how KaleshAI helps: chat, coding, resume roast, interview practice or study.")
+    roast = st.select_slider("Roast level", options=list(extras.ROAST_LEVELS), value="Medium", help="Halka is gentle, Teekha is sharp. Never targets who you are.")
+    st.divider()
     api_key = st.text_input("API key", type="password", value=secret("OPENAI_API_KEY", "GROQ_API_KEY", "LLM_API_KEY", "API_KEY") if not local else "")
     st.divider()
     st.caption("Demo app. Chats and uploaded files stay in this browser session; the chosen model provider receives your messages and retrieved excerpts. Don't upload secrets.")
@@ -152,6 +170,7 @@ with tools_panel:
                     st.warning(note)
         else:
             st.error("Web search is blocked from this server right now (" + "; ".join(test_notes) + "). Chat still works without it.")
+    read_links = st.toggle("Read links I paste", value=True, key="read_links", help="If your message has a public http(s) link, the page text is fetched and given to the model. Private or local addresses are blocked.")
     st.divider()
     st.markdown("**▤ Documents**")
     uploads = st.file_uploader("Add TXT, MD or PDF files", type=["txt", "md", "pdf"], accept_multiple_files=True, help="Up to 2 MB per file, 5 files total; first 30 PDF pages and 120,000 characters per file")
@@ -206,6 +225,14 @@ with tools_panel:
 
 index = BM25Index(active_chunks)
 
+starter_pick = None
+if not st.session_state.messages:
+    st.markdown(f'<div class="kalesh-hero"><b>GARAGE OPEN HAI</b><span class="kalesh-chip">{html.escape(mode)}</span><span class="kalesh-chip">roast: {html.escape(roast)}</span><p>Kuch bhi pooch, saale. Neeche se ek shuru kar ya seedha type kar.</p></div>', unsafe_allow_html=True)
+    cols = st.columns(2)
+    for n, (label, text) in enumerate(extras.STARTERS):
+        if cols[n % 2].button(label, key=f"starter_{n}", use_container_width=True):
+            starter_pick = text
+
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
@@ -222,7 +249,12 @@ if not local and not api_key:
     st.sidebar.warning("Add an API key in the sidebar (Groq works: free key from console.groq.com), or switch on Local Ollama if you run it locally.")
 
 chat_prompt = st.chat_input("Ask me something, saale...")
-prompt = f"{requested_task}: {selected_doc}" if requested_task else chat_prompt
+last = st.session_state.messages[-1] if st.session_state.messages else None
+if last and last["role"] == "assistant" and not last.get("coverage") and len(st.session_state.messages) >= 2:
+    if st.button("↻ Dobara bol (regenerate)", key="regen"):
+        st.session_state.messages.pop()
+        starter_pick = st.session_state.messages.pop()["content"]
+prompt = f"{requested_task}: {selected_doc}" if requested_task else (chat_prompt or starter_pick)
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -243,7 +275,18 @@ if prompt:
             web_note = next((n for n in web_notes if n.startswith("Low relevance:")), "")
         else:
             web_note = "Web search failed" + (f" ({'; '.join(web_notes)})" if web_notes else "") + ". Answered without it."
-    doc_context = context if active_chunks else ""
+    page_context, link_note = "", ""
+    if read_links and not requested_task:
+        found = extras.find_urls(prompt)
+        if found:
+            with st.spinner("Link padh raha hoon..."):
+                pages = [extras.read_page(u) for u in found]
+            page_context = extras.format_pages(pages)
+            bad = [p for p in pages if p.get("error")]
+            if bad:
+                link_note = "Couldn't read: " + "; ".join(f"{p['url']} ({p['error']})" for p in bad) + "."
+                page_context += ("\n\n" if page_context else "") + "Some pasted links could not be read, so don't claim to know their content: " + link_note
+    doc_context = "\n\n".join(x for x in (context if active_chunks else "", page_context) if x)
     model_prompt = TASKS[requested_task] if requested_task else prompt
     if doc_context or web_context or web_note:
         # Context belongs to this one question, not the whole chat history.
@@ -255,7 +298,7 @@ if prompt:
     with st.chat_message("assistant"):
         with st.spinner("Plotting a mildly evil answer..."):
             try:
-                reply = complete([{"role": "system", "content": SYSTEM}] + last_turns, base, model, api_key.strip())
+                reply = complete([{"role": "system", "content": SYSTEM + extras.system_extra(mode, roast)}] + last_turns, base, model, api_key.strip())
             except Exception as error:
                 failed = True
                 hint = "Start Ollama and pull the model, or check the URL and model." if local else "Check your provider URL, model and API key."
@@ -270,5 +313,7 @@ if prompt:
             st.markdown("<small>Web: " + html_links(web_results) + "</small>", unsafe_allow_html=True)
         if web_note:
             st.caption(web_note)
-    st.session_state.messages.append({"role": "assistant", "content": reply, "sources": sources, "web": web_results, "web_note": web_note, "coverage": coverage if requested_task else "", "failed": failed})
+        if link_note:
+            st.caption(link_note)
+    st.session_state.messages.append({"role": "assistant", "content": reply, "sources": sources, "web": web_results, "web_note": (web_note + " " + link_note).strip(), "coverage": coverage if requested_task else "", "failed": failed})
     st.rerun()
