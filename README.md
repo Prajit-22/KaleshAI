@@ -125,3 +125,10 @@ your uploaded resume there. The app has no third-party scoring integration;
 any in-app resume score must be labelled an independent estimate with a rubric,
 not a real ATS or external service score. Chat cards now use opaque backgrounds
 and no text shadow for readable answers over the artwork.
+
+## Modes, roast level, links
+
+- **Mode** (sidebar): Dost, Coder, Resume roaster, Interview coach, Padhai buddy.
+- **Roast level**: Halka, Medium, Teekha. Never targets who someone is.
+- **Read links I paste** (tools panel, on by default): public http(s) links in your message are fetched and given to the model as untrusted reference text. Private and local addresses are blocked.
+- Starter buttons on the empty screen and a regenerate button after each reply.
